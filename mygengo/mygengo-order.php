@@ -2,7 +2,7 @@
 /*  Copyright 2010  Gonzalo Huerta-Canepa  (email : gonzalo@huerta.cl)
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License, version 2, as 
+    it under the terms of the GNU General Public License, version 2, as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -13,12 +13,12 @@
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/      
+*/
 ?>
 <?
 /**
  *
- * Add new order file. 
+ * Add new order file.
  * This page contains the form to add new orders to the current myGengo account.
  * Some considerations about this page:
  * - It uses the textsources registered by the plugin or the user functions (@see mygengo_register_textsource)
@@ -29,7 +29,7 @@
  */
 ?>
 <?php
-if (!function_exists ('add_action')): 
+if (!function_exists ('add_action')):
 	header('Status: 403 Forbidden');
 	header('HTTP/1.1 403 Forbidden');
 	exit();
@@ -118,7 +118,7 @@ function processTiers() {
 		setTimeout('fillEstimate', 200);
 <?php
 	if (isset($_POST['jobs_uc'])) {
-?> 
+?>
 		enableOrder();
 		updateTier();
 <?php
@@ -206,11 +206,11 @@ function enableOrder() {
 }
 <?php
 	if (isset($_POST['jobs_uc'])) {
-?> 
+?>
 function init() {
 	fillTiers();
 }
-window.onload = init; 
+window.onload = init;
 <?php
 	}
 ?>
@@ -244,15 +244,15 @@ window.onload = init;
 							<div style="display:none;">
 								<input type="submit" name="save" value="Save">
 							</div>
-							<div id="minor-publishing-actions"> 
+							<div id="minor-publishing-actions">
 								<div id="preview-action">
-									<?php _e('Balance'); ?>: <input type="text" id="mg_credits" name="mg_credits" style="width: 10px; border:none" value="<?php echo $mg_credits; ?>" readonly /><br />
-									<?php _e('Estimated cost'); ?>:  $ <input type="text" id="mg_price" name="mg_price" style="width: 10px; border:none" value="<?php echo $mg_quote; ?>" readonly /><br/>
-									<?php _e('Units'); ?>: <input type="text" id="mg_unit_count" name="mg_unit_count" style="width: 10px; border:none" value="<?php echo $mg_word_count; ?>" readonly /> <br/>
-									<?php _e('Estimated time'); ?>: <input type="text" id="mg_estimated_time" name="mg_estimated_time" style="width: 10px; border:none" value="-" size="3" readonly /> <?php _e('hours'); ?>
-								</div> 
-								<div class="clear"></div> 
-							</div> 
+									<?php _e('Balance'); ?>: <input type="text" id="mg_credits" name="mg_credits" style="width: 100px; border:none" value="<?php echo $mg_credits; ?>" readonly /><br />
+									<?php _e('Estimated cost'); ?>:  $ <input type="text" id="mg_price" name="mg_price" style="width: 100px; border:none" value="<?php echo $mg_quote; ?>" readonly /><br/>
+									<?php _e('Units'); ?>: <input type="text" id="mg_unit_count" name="mg_unit_count" style="width: 100px; border:none" value="<?php echo $mg_word_count; ?>" readonly /> <br/>
+									<?php _e('Estimated time'); ?>: <input type="text" id="mg_estimated_time" name="mg_estimated_time" style="width: 100px; border:none" value="-" size="3" readonly /> <?php _e('hours'); ?>
+								</div>
+								<div class="clear"></div>
+							</div>
 							<div id="misc-publishing-actions">
 								<div class="misc-pub-section misc-pub-section-last">
 <label for="as_group" class="selectit"><input id="as_group" name="as_group" type="checkbox" value="Y" checked> <?php _e('Assign whole translation job to one person'); ?></label><br/>
@@ -261,8 +261,8 @@ window.onload = init;
 							</div>
 						</div>
 						<div id="major-publishing-actions">
-							<div id="delete-action"> 
-							</div> 
+							<div id="delete-action">
+							</div>
 							<div id="publishing-action">
 <img id="submitting_image" src="<?php echo $mg_plugin_url.'images/loading.gif';?>" alt="loading..." style="visibility:hidden; display: none;" />
 <input name="addcredits" type="button" class="button-primary" id="topup"   style="visibility:hidden; display: none;" value="<?php _e('You need more credits'); ?>!" onclick="document.location='http://www.mygengo.com';">
@@ -310,13 +310,13 @@ window.onload = init;
 									<?php echo mygengo_generate_select_from_sqlquery("SELECT language_code, language_name FROM ".$table_name1." ORDER BY language_name", "language_code", "language_name", $mg_primary_language); ?>
 								</select>
 							</td>
-							<td>	
+							<td>
 								<select name="mg_target_language" id="mg_target_language" onchange="getUnitType(this.value); fillTiers()">
 									<option value="">[<?php _e('Select'); ?>]</option>
-<?php 
+<?php
 	if ($mg_primary_language != '') {
 		$selected_code = $mg_primary_language;
-		echo mygengo_generate_select_from_sqlquery("SELECT DISTINCT l.language_code, l.language_name FROM ".$table_name1." l, ".$table_name2." p WHERE p.pair_source = '".$selected_code."' AND p.pair_target = l.language_code ORDER BY language_name, language_code", "language_code", "language_name", $mg_secondary_language); 
+		echo mygengo_generate_select_from_sqlquery("SELECT DISTINCT l.language_code, l.language_name FROM ".$table_name1." l, ".$table_name2." p WHERE p.pair_source = '".$selected_code."' AND p.pair_target = l.language_code ORDER BY language_name, language_code", "language_code", "language_name", $mg_secondary_language);
 	}
 ?>
 								</select>
@@ -346,7 +346,7 @@ window.onload = init;
 							</td>
 						</tr>
 					</table>
-				</div> 
+				</div>
 			</div>
 <?php
 	if (!isset($_POST['mg_text_amount'])) {
@@ -361,7 +361,7 @@ window.onload = init;
 					<textarea rows="1" cols="40" id="mg_body_src_<?php echo $ttt_idx; ?>" name="mg_body_src_<?php echo $ttt_idx; ?>" style="height: 8em; margin: 0px; width: 98%;" onchange="enableQuote()"><?php echo $ttt_text;?></textarea></p>
 					<p><?php _e('Add a comment for the translator (optional)'); ?>:<br />
 					<textarea rows="1" cols="40" name="mg_body_comment_<?php echo $ttt_idx; ?>" style="height: 4em; margin: 0px; width: 98%;"></textarea></p>
-				</div> 
+				</div>
 			</div>
 <?php
 			$ttt_idx++;
@@ -378,7 +378,7 @@ window.onload = init;
 					<textarea rows="1" cols="40" id="mg_body_src_<?php echo $i; ?>" name="mg_body_src_<?php echo $i; ?>" style="height: 8em; margin: 0px; width: 98%;" onchange="enableQuote()"><?php echo mygengo_reverse_escape($_POST['mg_body_src_' . $i]);?></textarea></p>
 					<p><?php _e('Add a comment for the translator (optional)'); ?>:<br />
 					<textarea rows="1" cols="40" name="mg_body_comment_<?php echo $i; ?>" style="height: 4em; margin: 0px; width: 98%;"><?php echo mygengo_reverse_escape($_POST['mg_body_comment_' . $i]);?></textarea></p>
-				</div> 
+				</div>
 			</div>
 <?php
 		}

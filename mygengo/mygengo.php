@@ -2,7 +2,7 @@
 /*  Copyright 2010  Gonzalo Huerta-Canepa  (email : gonzalo@huerta.cl)
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License, version 2, as 
+    it under the terms of the GNU General Public License, version 2, as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -20,7 +20,7 @@
 Plugin Name: MyGengo Translator
 Plugin URI: http://www.mygengo.com
 Description: Adds machine and professional translation to WordPress-based blogs
-Version: 1.0
+Version: 1.1
 Author: Gonzalo Huerta-Canepa
 Author URI: http://gonzalo.huerta.cl
 License: GPL2
@@ -35,7 +35,7 @@ License: GPL2
  */
 ?>
 <?php
-	if (!function_exists ('add_action')): 
+	if (!function_exists ('add_action')):
 		header('Status: 403 Forbidden');
 		header('HTTP/1.1 403 Forbidden');
 		exit();
@@ -63,17 +63,17 @@ add_action('admin_menu', 'mygengo_add_admin_panel');
 add_action('admin_menu', 'mygengo_create_meta_box');
 add_action('wp_dashboard_setup', 'mygengo_add_dashboard_widgets' );
 //Post-related actions
-add_action('save_post',                  'mygengo_save_postdata'); 
-add_action('restrict_manage_posts',      'mygengo_restrict_manage');  
+add_action('save_post',                  'mygengo_save_postdata');
+add_action('restrict_manage_posts',      'mygengo_restrict_manage');
 add_filter('get_previous_post_join',     'mygengo_adjacent_posts_join');
 add_filter('get_next_post_join',         'mygengo_adjacent_posts_join');
 add_filter('get_previous_post_where',    'mygengo_adjacent_posts_where');
 add_filter('get_next_post_where',        'mygengo_adjacent_posts_where');
 //Page-related actions
-add_action('save_page',                  'mygengo_save_postdata'); 
+add_action('save_page',                  'mygengo_save_postdata');
 add_action('restrict_manage_pages',      'mygengo_restrict_manage');
 //Comment-related actions
-add_action('edit_comment', 'mygengo_save_commentdata'); 
+add_action('edit_comment', 'mygengo_save_commentdata');
 //Display action -- selects only posts and pages written in the selected language
 add_action('pre_get_posts', 'mygengo_selected_language_filter');
 //User-related actions
@@ -231,11 +231,11 @@ function mygengo_deactivate() {
         delete_option("mygengo_use_browser");
         delete_option("mygengo_use_mygengouser");
         delete_option("mygengo_use_admin_key");
-        delete_option("mygengo_api_key");    
+        delete_option("mygengo_api_key");
         delete_option("mygengo_private_key");
         delete_option("mygengo_baseurl");
         delete_option("mygengo_add_footer");
-        delete_option("mygengo_footer"); 
+        delete_option("mygengo_footer");
         delete_option("mygengo_correction_instructions");
         delete_option("mygengo_rejection_instructions");
 
@@ -310,7 +310,7 @@ function mygengo_add_account_panel() {
 function mygengo_add_jobs_panel() {
 	global $job_headers;
 
-	if (function_exists('add_submenu_page')) { 
+	if (function_exists('add_submenu_page')) {
 		$mg_keys = mygengo_getKeys();
 		if (count($mg_keys) == 2) {
 			$page = add_submenu_page(basename(__FILE__), __('Jobs'), __('Jobs'), 'edit_posts', basename(__FILE__) . 'jobs', 'mygengo_jobs_panel');
@@ -496,7 +496,7 @@ function mygengo_manage_forms() {
 		$job_post_type    = (isset($_POST['mg_post_type']))?$_POST['mg_post_type']:'';
 		$job_auto_approve = (isset($_POST['auto_approve']))?'1':'0';
 		$job_callback_url = $mg_plugin_url.'mygengo-callback.php';
-		
+
 		$titotal = intval($_POST['mg_text_amount']);
 		$jobstopost = array();
 		for($ti=0; $ti<$titotal; $ti++) {
@@ -554,6 +554,11 @@ function mygengo_manage_forms() {
 
 			$jobs->postJobs($jobstopost, $job_as_group, $job_process, 'json');
 			$json = $jobs->getResponseBody();
+			/* ************************ edited by ALex Ulko *********************************/
+
+			if ($json === '') {
+				wp_die( 'Error: Empty response', 'Error while communicating with myGengo server!' );
+			}
 			$jsonobject = json_decode($json);
 			$jsonerror = mygengo_check_error($jsonobject);
 			if ($jsonerror) {
@@ -562,32 +567,70 @@ function mygengo_manage_forms() {
 
 			//check correct submission
 			$jsonresponse = $jsonobject->{'response'};
-			$job_group_id = 0;
-			$jsongroupid  = $jsonresponse->{'group_id'};
-			if ($jsongroupid) {
-				$job_group_id = intval($jsongroupid);
-			}
-			for($ti=0; $ti<$titotal; $ti++) {
-				$jsonjob        = $jsonresponse->{'jobs'}[$ti]->{'job_'.$ti};
-				$job_ctime      = $jsonjob->{'ctime'};
-				$job_modified   = $jsonjob->{'ctime'};
-				$job_id         = $jsonjob->{'job_id'};
-				$job_slug       = $jsonjob->{'slug'};
-				$job_body_src   = $jsonjob->{'body_src'};
-				$job_body_tgt   = $jsonjob->{'body_tgt'};
-				if (is_null($job_body_tgt)) { $job_body_tgt = 'NULL'; } else {$job_body_tgt   = "'".addslashes($job_body_tgt)."'";}
-				$job_unit_count = $jsonjob->{'unit_count'};
-				$job_credits    = $jsonjob->{'credits'};
 
-				//insert in sql db
-				$cnt = $wpdb->get_var("SELECT COUNT(1) FROM ".$table_name3." WHERE job_id = ".$job_id);
-				if (!$cnt) {
-					$sql = "INSERT INTO ".$table_name3." (job_id,job_slug,job_body_src,job_body_tgt,job_lc_src,job_lc_tgt,job_tier,job_unit_count,job_credits,job_status,job_ctime,job_modified,job_user_id,job_post_id,job_post_type, job_group_id) VALUES (".$job_id.",'".addslashes($job_slug)."','".addslashes($job_body_src)."',".$job_body_tgt.",'".$job_lc_src."','".$job_lc_tgt."','".$job_tier."',".$job_unit_count.",".$job_credits.",'".$job_status."',".$job_ctime.",".$job_modified.",".$job_user_id.",".$job_post_id.",'".$job_post_type."',".$job_group_id.")";
-					if ($wpdb->query($sql) === FALSE) {
-						wp_die( 'Error inserting new job! ID: ' . $job_id . ' query: ' . $sql, 'Error in order' );
+			$order_id = intval($jsonresponse->{'order_id'});
+			if (!$order_id) {
+				wp_die( 'Error: Order not found', 'Error while communicating with myGengo server!' );
+			}
+			$job_group_id = intval($jsonresponse->{'group_id'});
+
+			$order = myGengo_Api::factory('order', $mg_keys['api_key'], $mg_keys['private_key']);
+			$order->getOrder($order_id);
+
+			$json_order = $order->getResponseBody();
+
+			$jsonobject_order = json_decode($json_order);
+			$jsonerror_order = mygengo_check_error($jsonobject_order);
+			if ($jsonerror_order) {
+				wp_die( 'Error: ' . $jsonerror_order[0] . ' - ' . $jsonerror_order[1], 'Error while communicating with myGengo server!' );
+			}
+
+			$jsonresponse_order = $jsonobject_order->{'response'};
+
+			$job_ids = (array) $jsonresponse_order->{'order'}->{'jobs_available'};
+			if(count($job_ids)) {
+
+				$jobs->getJobs($job_ids);
+
+				$json = $jobs->getResponseBody();
+
+				$jsonobject = json_decode($json);
+				$jsonerror = mygengo_check_error($jsonobject);
+				if ($jsonerror) {
+					wp_die( 'Error: ' . $jsonerror[0] . ' - ' . $jsonerror[1], 'Error while communicating with myGengo server!' );
+				}
+
+				//check correct submission
+				$jsonresponse = $jsonobject->{'response'};
+				$job_array = (array) $jsonresponse->{'jobs'};
+				if(count($job_array)) {
+					for($ti=0; $ti<$titotal; $ti++) {
+						$jsonjob        = $job_array[$ti];
+
+						$job_ctime      = $jsonjob->{'ctime'};
+						$job_modified   = $jsonjob->{'ctime'};
+						$job_id         = intval($jsonjob->{'job_id'});
+						$job_slug       = $jsonjob->{'slug'};
+						$job_body_src   = $jsonjob->{'body_src'};
+						$job_body_tgt   = $jsonjob->{'body_tgt'};
+						if (is_null($job_body_tgt)) { $job_body_tgt = 'NULL'; } else {$job_body_tgt   = "'".addslashes($job_body_tgt)."'";}
+						$job_unit_count = $jsonjob->{'unit_count'};
+						$job_credits    = $jsonjob->{'credits'};
+
+						//insert in sql db
+						if($job_id) {
+							$cnt = $wpdb->get_var("SELECT COUNT(1) FROM ".$table_name3." WHERE job_id = ".$job_id);
+							if (!$cnt) {
+								$sql = "INSERT INTO ".$table_name3." (job_id,job_slug,job_body_src,job_body_tgt,job_lc_src,job_lc_tgt,job_tier,job_unit_count,job_credits,job_status,job_ctime,job_modified,job_user_id,job_post_id,job_post_type, job_group_id) VALUES (".$job_id.",'".addslashes($job_slug)."','".addslashes($job_body_src)."',".$job_body_tgt.",'".$job_lc_src."','".$job_lc_tgt."','".$job_tier."',".$job_unit_count.",".$job_credits.",'".$job_status."',".$job_ctime.",".$job_modified.",".$job_user_id.",".$job_post_id.",'".$job_post_type."',".$job_group_id.")";
+								if ($wpdb->query($sql) === FALSE) {
+									wp_die( 'Error inserting new job! ID: ' . $job_id . ' query: ' . $sql, 'Error in order' );
+								}
+							}
+						}
 					}
 				}
 			}
+			/* ************************ ~edited by ALex Ulko ********************************/
 			wp_redirect($wp_admin_url . '/admin.php?page=mygengo.phpjobs');
 		}
 	} elseif (isset($_POST['mg_reject_form'])) {
@@ -711,7 +754,7 @@ function mygengo_manage_forms() {
 
 					// Create post object
 					$mg_post = array(
-						'post_status'   => 'draft', 
+						'post_status'   => 'draft',
 						'post_type'     => $post_type,
 						'post_title'    => $post_sections['post_title'],
 						'post_excerpt'  => $post_sections['post_excerpt'],
@@ -720,7 +763,7 @@ function mygengo_manage_forms() {
 						'post_category' => $post_cats,
 						'post_parent'   => $post_parent
 					);
-		
+
 					// Insert the post into the database
 					$post_id = wp_insert_post( $mg_post, true );
 					if (is_wp_error($post_id)) {
@@ -755,18 +798,18 @@ function mygengo_manage_forms() {
 function mygengo_dashboard_widget_function() {
 	global $wpdb, $current_user, $userdata, $wp_admin_url, $table_name3, $table_name4;
 	$filter = ' AND j.job_user_id IN (-1';
-	$mg_public_keys  = mygengo_getkeys(0);	
-	$mg_private_keys = mygengo_getkeys(2);	
+	$mg_public_keys  = mygengo_getkeys(0);
+	$mg_private_keys = mygengo_getkeys(2);
 	if (count($mg_private_keys)==2) {
 		$filter .= ',' . $current_user->ID;
-	} 
+	}
 	if (count($mg_public_keys)==2) {
 		$filter .= ',0';
 	}
 	$filter .= ')';
 
 ?>
-<div id="the-comment-list" class="list:comment"> 
+<div id="the-comment-list" class="list:comment">
 <?php
 	$sql = "SELECT j.job_id, j.job_slug, j.job_status FROM ".$table_name3." j WHERE j.job_callback = 1".$filter;
 	$callback_jobs = $wpdb->get_results($sql);
@@ -777,13 +820,13 @@ function mygengo_dashboard_widget_function() {
 			$idx++;
 			$style = ($style == 'even')? 'odd' : 'even';
 ?>
-	<div id="comment-<?php echo $idx; ?>" class="comment <?php echo $style; ?> <?php echo $job->job_status; ?>"> 
-		<div class="dashboard-comment-wrap"> 
-			<h4 class="comment-meta"> 
+	<div id="comment-<?php echo $idx; ?>" class="comment <?php echo $style; ?> <?php echo $job->job_status; ?>">
+		<div class="dashboard-comment-wrap">
+			<h4 class="comment-meta">
 				<?php _e('Job'); ?> <a href='<?php echo $wp_admin_url; ?>/admin.php?page=mygengo.phpjobs&action=view&job_id=<?php echo $job->job_id; ?>'><?php echo mygengo_reverse_escape($job->job_slug); ?></a> <?php _e('has status'); ?> <strong><?php _e($job->job_status); ?></strong>
-			</h4> 
-		</div> 
-	</div> 
+			</h4>
+		</div>
+	</div>
 <?php
 		}
 	} else {
@@ -803,14 +846,14 @@ function mygengo_dashboard_widget_function() {
 		$idx++;
 		$style = ($style == 'even')? 'odd' : 'even';
 ?>
-	<div id="comment-<?php echo $idx; ?>" class="comment <?php echo $style; ?>"> 
-		<div class="dashboard-comment-wrap"> 
-			<h4 class="comment-meta"> 
+	<div id="comment-<?php echo $idx; ?>" class="comment <?php echo $style; ?>">
+		<div class="dashboard-comment-wrap">
+			<h4 class="comment-meta">
 				<?php _e('From'); ?> <cite class="comment-author"><?php echo $comment->comment_author; ?></cite> on <a href='<?php echo $wp_admin_url; ?>/admin.php?page=mygengo.phpjobs&action=view&job_id=<?php echo $comment->comment_job_id; ?>'><?php echo mygengo_reverse_escape($comment->job_slug); ?></a>
-			</h4> 
-			<blockquote><p><?php echo mygengo_reverse_escape($comment->comment_body); ?></p></blockquote> 
-		</div> 
-	</div> 
+			</h4>
+			<blockquote><p><?php echo mygengo_reverse_escape($comment->comment_body); ?></p></blockquote>
+		</div>
+	</div>
 <?php
 		}
 	} else {
@@ -821,11 +864,11 @@ function mygengo_dashboard_widget_function() {
 ?>
 	</div>
 <?php
-} 
+}
 
 function mygengo_add_dashboard_widgets() {
-	wp_add_dashboard_widget('mygengo_dashboard_widget', 'myGengo Dashboard', 'mygengo_dashboard_widget_function');	
-} 
+	wp_add_dashboard_widget('mygengo_dashboard_widget', 'myGengo Dashboard', 'mygengo_dashboard_widget_function');
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////                                                            //////////
@@ -954,7 +997,7 @@ function  mygengo_save_postdata( $post_id ) {
 		elseif($data == "")
 			delete_post_meta($post_id, '_'.$meta_box['name'].'_value', get_post_meta($post_id, '_'.$meta_box['name'].'_value', true));
 	}
-}	
+}
 
 
 function  mygengo_save_commentdata( $comment_id ) {
@@ -975,20 +1018,20 @@ function  mygengo_save_commentdata( $comment_id ) {
 		update_comment_meta($comment_id, '_comment_language_value', $data);
 	elseif($data == "")
 		delete_comment_meta($comment_id, '_comment_language_value', $previous);
-}	
+}
 
-function mygengo_restrict_manage() {  
-?>  
-	<form name="mygengo_filterform" id="mygengo_filterform" action="" method="get">  
-		<fieldset>  
+function mygengo_restrict_manage() {
+?>
+	<form name="mygengo_filterform" id="mygengo_filterform" action="" method="get">
+		<fieldset>
 			<select name='post_language' id='post_language' class='postform'>
 				<option value="">View all languages&nbsp&nbsp;</option>
 				<?php echo mygengo_generate_select_from_sqlquery("SELECT language_code, language_name FROM languages ORDER BY language_name", "language_code", "language_name", ""); ?>
-			</select>  
-			<input type="submit" name="submit" value="<?php _e('Filter') ?>" class="button" />  
-		</fieldset>  
-	</form>  
-<?php  
+			</select>
+			<input type="submit" name="submit" value="<?php _e('Filter') ?>" class="button" />
+		</fieldset>
+	</form>
+<?php
 }
 
 if($_GET['post_language'] != "") {
@@ -1002,7 +1045,7 @@ if($_GET['post_language'] != "") {
 	}
 }
 
-add_shortcode('mygengo_st', 'mygengo_sc_show_translations', 12);  
+add_shortcode('mygengo_st', 'mygengo_sc_show_translations', 12);
 
 function mygengo_sc_show_translations( $atts, $content = null ) {
    extract( shortcode_atts( array(
@@ -1011,7 +1054,7 @@ function mygengo_sc_show_translations( $atts, $content = null ) {
       'element_id' => '',
       'include_text' => '0',
       ), $atts ) );
- 
+
    return mygengo_translations_viewer(esc_attr($post_id), esc_attr($post_type), esc_attr($element_id), intval(esc_attr($include_text)));
 }
 
@@ -1041,7 +1084,7 @@ function mygengo_translations_viewer($post_id, $post_type='post', $element_id=''
 	return $trdivs . '<div class="mg_trans_navbar">'.$navbar.'</div>';
 }
 
-add_shortcode('mygengo_t4e', 'mygengo_sc_translations_editor', 12);  
+add_shortcode('mygengo_t4e', 'mygengo_sc_translations_editor', 12);
 
 function mygengo_sc_translations_editor( $atts, $content = null ) {
    extract( shortcode_atts( array(
@@ -1049,7 +1092,7 @@ function mygengo_sc_translations_editor( $atts, $content = null ) {
       'post_id'    => '0',
       'element_id' => '',
       ), $atts ) );
- 
+
    return mygengo_translations_4editor(esc_attr($post_id), esc_attr($post_type), esc_attr($element_id));
 }
 
@@ -1091,7 +1134,7 @@ function mygengo_display_translations($post_id) {
 
 function mygengo_display_parent_link($post_id) {
 	global $wpdb;
-	
+
 	$query = "SELECT ID, ".$wpdb->prefix."postmeta.meta_key, ".$wpdb->prefix."postmeta.meta_value FROM ".$wpdb->prefix."posts INNER JOIN ".$wpdb->prefix."postmeta ON (".$wpdb->prefix."posts.ID = ".$wpdb->prefix."postmeta.post_id) WHERE 1=1 AND ".$wpdb->prefix."posts.post_type = 'post' AND (".$wpdb->prefix."posts.post_status = 'publish' OR ".$wpdb->prefix."posts.post_status = 'future' OR ".$wpdb->prefix."posts.post_status = 'draft' OR ".$wpdb->prefix."posts.post_status = 'pending' OR ".$wpdb->prefix."posts.post_status = 'private') AND ".$wpdb->prefix."postmeta.meta_key = '_post_parent_value' AND ID = ".$post_id." ORDER BY ".$wpdb->prefix."postmeta.meta_value LIMIT 1";
 
 	$results = $wpdb->get_results($query);
@@ -1118,11 +1161,11 @@ function mygengo_widget_init() {
 		}
 
 		if(!$id) {
-			return;	
+			return;
 		}
 
 		$my_post_id = $id;
-		
+
 		if(mygengo_get_primarylanguage() == mygengo_get_post_language_value($my_post_id)) {
 			//the language of this post is the primary language, so use this post as the parent post in query below
 			$parent_post_id = $my_post_id;
@@ -1142,7 +1185,7 @@ function mygengo_widget_init() {
 		if($parent_post_id != $my_post_id) {
 			$query .= " OR (".$wpdb->prefix."posts.ID = ".$parent_post_id.")";
 		}
-		
+
 		$query .= " ORDER BY ".$wpdb->prefix."postmeta.meta_value";
 
 
@@ -1175,7 +1218,7 @@ function mygengo_widget_init() {
 
 
 	function mygengo_widget_other_translation_listings($args) {
-		
+
 		global $wp_query;
 		global $id;
 		global $my_post_id;
@@ -1185,7 +1228,7 @@ function mygengo_widget_init() {
 		}
 
 		if(!$my_post_id) {
-			return;	
+			return;
 		}
 
 		if((intval(mygengo_get_primarylanguage()) == intval(mygengo_get_post_language_value($my_post_id))) || mygengo_get_post_language_value($my_post_id) == "") {
@@ -1273,7 +1316,7 @@ function mygengo_add_language_where($where) {
 			   $post_ID_in_3 = "SELECT DISTINCT ID FROM ".$wpdb->prefix."posts INNER JOIN ".$wpdb->prefix."postmeta ON (".$wpdb->prefix."posts.ID = ".$wpdb->prefix."postmeta.post_id) WHERE 1=1 AND ".$wpdb->prefix."postmeta.meta_key = '_post_language_value' AND ".$wpdb->prefix."postmeta.meta_value != '".get_option("mygengo_primary_language"."'");
 
 			  $where_addition = "";
-              
+
 			  $where_addition = "AND (".$wpdb->prefix."posts.ID IN (".$post_ID_in_1.") OR (".$wpdb->prefix."posts.ID NOT IN (".$post_ID_in_2.") AND ".$wpdb->prefix."posts.ID NOT IN (".$post_ID_in_3.")))";
 
 			  return $where." ".$where_addition;

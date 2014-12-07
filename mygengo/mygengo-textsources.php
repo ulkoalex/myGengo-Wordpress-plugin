@@ -2,7 +2,7 @@
 /*  Copyright 2010  Gonzalo Huerta-Canepa  (email : gonzalo@huerta.cl)
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License, version 2, as 
+    it under the terms of the GNU General Public License, version 2, as
     published by the Free Software Foundation.
 
     This program is distributed in the hope that it will be useful,
@@ -17,7 +17,7 @@
 ?>
 <?
 
-require_once(dirname(__FILE__) . '/mygengo-common.php'); 
+require_once(dirname(__FILE__) . '/mygengo-common.php');
 
 global $postts_id, $pagets_id, $commentts_id;
 
@@ -42,7 +42,10 @@ function mygengo_get_textsources() {
 	$ts = array();
 	if ($sources) :
 		foreach ($sources as $source) :
-			eval("\$tsinstance = new {$source->ts_classname}({$source->ts_id});");
+			/* ************************ edited by ALex Ulko *********************************/
+			$class = $source->ts_classname;
+			$tsinstance = new $class($source->ts_id);
+			/* ************************ ~edited by ALex Ulko ********************************/
 			$ts[] = $tsinstance;
 		endforeach;
 	endif;
@@ -50,25 +53,25 @@ function mygengo_get_textsources() {
 	return $ts;
 }
 
-abstract class TextSource {  
-	protected $internalId;  
+abstract class TextSource {
+	protected $internalId;
 
 	abstract public function accept($post_type);
 	abstract public function retrieveFormElements();
 	abstract public function getAssignedTo();
-	abstract public function getTextToTranslate($requestvars);  
+	abstract public function getTextToTranslate($requestvars);
 	abstract public function getPrimaryLanguage();
 	abstract public function getWordcount($unit);
-	abstract public function retrievePublishableAs($jobid);  
-	abstract public function publishAs($jobid, $requestvars);  
+	abstract public function retrievePublishableAs($jobid);
+	abstract public function publishAs($jobid, $requestvars);
 
-	public function __construct($internalId) {  
-		$this->internalId = $internalId;  
-	} 
+	public function __construct($internalId) {
+		$this->internalId = $internalId;
+	}
 
-	public function getInternalId() {  
-		return $this->internalId;  
-	}  
+	public function getInternalId() {
+		return $this->internalId;
+	}
 
 	public function getAssignFormField() {
 		$elements = $this->retrieveFormElements();
@@ -88,27 +91,31 @@ abstract class TextSource {
 	}
 
 	public function getPublishableFormField($jobid) {
+		/* ************************ edited by ALex Ulko *********************************/
+		$elements = $this->retrieveFormElements();
+		if (!$elements) { return ''; }
+		/* ************************ ~edited by ALex Ulko ********************************/
 		$html = '<div class="mg_css_assign">' . $elements['label'];
 		$html .= $this->retrievePublishableAs($jobid);
 		$html .= '</div>';
 		return $html;
 	}
-}  
+}
 
-class DummyTextSource extends TextSource {  
-	protected $primarylang = 'en';  
-	protected $type        = 'post';  
-	protected $post_id     = 0;  
+class DummyTextSource extends TextSource {
+	protected $primarylang = 'en';
+	protected $type        = 'post';
+	protected $post_id     = 0;
 
 
-	public function __construct($internalId) {  
-		$this->internalId = $internalId;  
+	public function __construct($internalId) {
+		$this->internalId = $internalId;
 		$primarylang = mygengo_get_primarylanguage();
-	} 
+	}
 
-	public function getInternalId() {  
-		return $this->internalId;  
-	}  
+	public function getInternalId() {
+		return $this->internalId;
+	}
 
 	public function accept($post_type) { return true; }
 	public function getAssignFormField() { return ''; }
@@ -118,14 +125,14 @@ class DummyTextSource extends TextSource {
 		$this->post_id = $_REQUEST['mg_post_id'];
 		$this->type = $_REQUEST['mg_post_type'];
 		return  __('Assigned to ').$this->type.' ID '.$this->post_id. '<input type="hidden" id="mg_post_id" name="mg_post_id" value="' . $this->post_id . '" /><input type="hidden" id="mg_post_type" name="mg_post_type" value="' . $this->type . '" />';
-	}  
+	}
 
-	public function getTextToTranslate($requestvars) { 
+	public function getTextToTranslate($requestvars) {
 		$this->post_id = $requestvars['mg_post_id'];
 		$this->type = $requestvars['mg_post_type'];
 		$texts = array();
 		if (isset($requestvars['mg_ttt'])) {
-			$texts[__('Your title')] = base64_decode($requestvars['mg_ttt']); 
+			$texts[__('Your title')] = base64_decode($requestvars['mg_ttt']);
 		} else {
 			$texts[__('Your title')] = '';
 		}
@@ -137,13 +144,13 @@ class DummyTextSource extends TextSource {
 	public function retrievePublishableAs($jobid) { return ''; }
 	public function publishAs($jobid, $requestvars) { return ''; }
 	public function getPublishableFormField($jobid) { return ''; }
-}  
+}
 
-abstract class BlogTextSource extends TextSource {  
-	protected $primarylang = 'en';  
-	protected $wordcount   = 0;  
-	protected $type        = 'post';  
-	protected $post_id     = 0;  
+abstract class BlogTextSource extends TextSource {
+	protected $primarylang = 'en';
+	protected $wordcount   = 0;
+	protected $type        = 'post';
+	protected $post_id     = 0;
 
 	public function __construct($internalId) {
 		parent::__construct($internalId);
@@ -151,10 +158,15 @@ abstract class BlogTextSource extends TextSource {
 	}
 
 	public function retrieveFormElements()  {
-		eval("\$mg_select = mygengo_generate_select_from_{$this->type}s();");
+
+		/* ************************ edited by ALex Ulko *********************************/
+		$func = 'mygengo_generate_select_from_'.$this->type.'s';
+		$mg_select = $func();
+		/* ************************ ~edited by ALex Ulko ********************************/
+
 		$mg_post_id = '<select name="mg_'.$this->type.'_id" id="mg_'.$this->type.'_id" style="width:300px;"><option value="0">[' . __('Select') . ']</option>' . $mg_select . '</select>';
 		$mg_add_post_comments = '<label for="mg_add_'.$this->type.'_comments"><input type="checkbox" id="mg_add_'.$this->type.'_comments" name="mg_add_'.$this->type.'_comments" value="Y"/>' . __('Add comments') . '</label>';
-	
+
 		$elements = array('label'    => __('Insert job text from ') . __($this->type),
 			  'elements' => array ('mg_'.$this->type.'_id' => $mg_post_id,  'mg_add_'.$this->type.'_comments' => $mg_add_post_comments),
 			  'names'    => array ('mg_'.$this->type.'_id' => 'mg_post_id', 'mg_add_'.$this->type.'_comments' => 'add_comments')
@@ -164,7 +176,7 @@ abstract class BlogTextSource extends TextSource {
 
 	public function getAssignedTo() {
 		return  __('Assigned to ').mygengo_get_post_type($this->post_id).' ID '.$this->post_id. '<input type="hidden" id="mg_post_id" name="mg_post_id" value="' . $this->post_id . '" /><input type="hidden" id="mg_post_type" name="mg_post_type" value="' . mygengo_get_post_type($this->post_id) . '" />';
-	}  
+	}
 
 	public function getTextToTranslate($requestvars) {
 		$this->post_id = $post_id = isset($requestvars['mg_post_id'])?$requestvars['mg_post_id']:0;
@@ -210,21 +222,25 @@ abstract class BlogTextSource extends TextSource {
 		return $this->wordcount;
 	}
 
-	public function retrievePublishableAs($jobid) {  
+	public function retrievePublishableAs($jobid) {
 		global $wpdb;
 		$table_name3 = $wpdb->prefix . 'gengo_jobs';
 		$job_post_id = $wpdb->get_var("SELECT job_post_id FROM ".$table_name3." WHERE job_id = ".$jobid);
 		if (!$job_post_id) { $job_post_id = 0; }
 
-		eval("\$mg_select = mygengo_generate_select_from_{$this->type}s({$job_post_id}, '<option value=\"\">[Select]</option>');");
+		/* ************************ edited by ALex Ulko *********************************/
+		$func = 'mygengo_generate_select_from_'.$this->type.'s';
+		$mg_select = $func($job_post_id, '<option value="">[Select]</option>');
+		/* ************************ ~edited by ALex Ulko ********************************/
+
 		$html  = __('Publish inside '.$this->type);
 		$html .= '<select name="mg_'.$this->type.'">' . $mg_select . '</select><br/>';
 		$html .= '<label><input type="radio" name="mg_publish_as" value="' . $this->internalId . '-translate" /><span class="checkbox-title">' . __('as translation') . '</span></label> <br/>';
 		$html .= '<label><input type="radio" name="mg_publish_as" value="' . $this->internalId . '-comment" /><span class="checkbox-title">' . __('as comments') . '</span></label> <br/>';
 		return $html;
-	}  
+	}
 
-	public function publishAs($jobid, $requestvars) { 
+	public function publishAs($jobid, $requestvars) {
 		list($id, $publish_as)  = split("-", $requestvars['mg_publish_as']);
 		if (intval($id) != $this->getInternalId()) {
 			wp_die( 'Error: accessing a text source with different id.', 'Error while creating the new post!' );
@@ -241,7 +257,7 @@ abstract class BlogTextSource extends TextSource {
 		foreach($categories as $cat) {
 			$post_cats[] = $cat->ID;
 		}
- 
+
 		$userid       = $requestvars['mg_user_id'];
 		$post_author  = (get_option('mygengo_use_mygengouser'))?get_option('mygengo_translator_id'):$userid;
 		if (count(mygengo_getKeys(2)) == 2 && get_the_author_meta('mygengo_add_footer', $userid)) {
@@ -294,11 +310,11 @@ abstract class BlogTextSource extends TextSource {
 			}
 			wp_redirect($wp_admin_url . '/post.php?post=' . $post_parent .'&action=edit');
 		}
-	}  
+	}
 
 }
 
-class PostTextSource extends BlogTextSource {  
+class PostTextSource extends BlogTextSource {
 	protected $type = 'post';
 
 	public function __construct($internalId) {
@@ -310,7 +326,7 @@ class PostTextSource extends BlogTextSource {
 	}
 }
 
-class PageTextSource extends BlogTextSource {  
+class PageTextSource extends BlogTextSource {
 	protected $type = 'page';
 
 	public function __construct($internalId) {
@@ -322,13 +338,13 @@ class PageTextSource extends BlogTextSource {
 	}
 }
 
-class CommentTextSource extends TextSource {  
-	protected $primarylang = 'en';  
-	protected $wordcount   = 0;  
-	protected $type        = 'comment';  
-	protected $post_type   = 'post';  
-	protected $post_id     = 0;  
-	protected $comment_id  = 0;  
+class CommentTextSource extends TextSource {
+	protected $primarylang = 'en';
+	protected $wordcount   = 0;
+	protected $type        = 'comment';
+	protected $post_type   = 'post';
+	protected $post_id     = 0;
+	protected $comment_id  = 0;
 
 	public function __construct($internalId) {
 		parent::__construct($internalId);
@@ -345,14 +361,14 @@ class CommentTextSource extends TextSource {
 
 	public function getAssignedTo() {
 		return  __('Assigned to comment') .' ID '.$this->comment_id. '<input type="hidden" id="mg_post_id" name="mg_post_id" value="' . $this->comment_id . '" /><input type="hidden" id="mg_post_type" name="mg_post_type" value="comment" />';
-	}  
+	}
 
 	public function getTextToTranslate($requestvars) {
 		$this->post_id    = $post_id    = isset($requestvars['wp_post_id'])?$requestvars['wp_post_id']:0;
 		$this->comment_id = $comment_id = isset($requestvars['mg_post_id'])?$requestvars['mg_post_id']:0;
 		if (!$comment_id) {
 			return array();
-		} 
+		}
 
 		$comment = get_comment($this->comment_id);
 		if (!$post_id) {
@@ -380,22 +396,26 @@ class CommentTextSource extends TextSource {
 		return $this->wordcount;
 	}
 
-	public function retrievePublishableAs($jobid) {  
+	public function retrievePublishableAs($jobid) {
 		global $wpdb;
 		$table_name3 = $wpdb->prefix . 'gengo_jobs';
 		$job_post_id = $wpdb->get_var("SELECT job_post_id FROM ".$table_name3." WHERE job_id = ".$jobid);
 		if (!$job_post_id) { $job_post_id = 0; }
 
 		$comment = get_comment($job_post_id);
-		$this->post_id = $comment->comment_post_ID;
+		$this->post_id = intval($comment->comment_post_ID);
 
-		eval("\$mg_select = mygengo_generate_select_from_{$this->post_type}s({$this->post_id}, '<option value=\"\">[Select]</option>');");
+		/* ************************ edited by ALex Ulko *********************************/
+		$func = 'mygengo_generate_select_from_'.$this->post_type.'s';
+		$mg_select = $func($this->post_id, '<option value="">[Select]</option>');
+		/* ************************ ~edited by ALex Ulko ********************************/
+
 		$html .= '<label><input type="radio" name="mg_publish_as" value="' . $this->internalId . '-translate" /><span class="checkbox-title">' . __('Publish as comment for '.$this->post_type) .'</span></label>';
 		$html .= '<select name="mg_'.$this->type.'">' . $mg_select . '</select><br/>';
 		return $html;
-	}  
+	}
 
-	public function publishAs($jobid, $requestvars) { 
+	public function publishAs($jobid, $requestvars) {
 		list($id, $publish_as)  = split("-", $requestvars['mg_publish_as']);
 		if (intval($id) != $this->getInternalId()) {
 			wp_die( 'Error: accessing a text source with different id.', 'Error while creating the new comment!' );
@@ -407,7 +427,7 @@ class CommentTextSource extends TextSource {
 
 		$post_parent = $requestvars['mg_'.$this->type];
 		$post_type   = $this->post_type;
- 
+
 		$userid       = $requestvars['mg_user_id'];
 		$comment_author  = (get_option('mygengo_use_mygengouser'))?get_option('mygengo_translator_id'):$userid;
 		if (count(mygengo_getKeys(2)) == 2 && get_the_author_meta('mygengo_add_footer', $userid)) {
@@ -488,11 +508,11 @@ add_action('mygengo_echo_translationpage', 'mygengo_echo_translation_post');
 function mygengo_echo_translation_post($body_src) {
 	$post_sections = mygengo_parse_content($body_src);
 	if ($post_sections['post_title'] != '') {
-		echo '<p><strong>' . __('Title') . ':</strong> ' . nl2br($post_sections['post_title']) . '</p>'; 
+		echo '<p><strong>' . __('Title') . ':</strong> ' . nl2br($post_sections['post_title']) . '</p>';
 	}
 	echo '<p><strong>' .__('Content') . ':</strong><br/>' . nl2br($post_sections['post_content']) . '</p>';
 	if (trim($post_sections['post_excerpt']) != '') {
-		echo '<p><strong>' . __('Excerpt') . ':</strong><br/> ' . nl2br($post_sections['post_excerpt']) . '</p>'; 
+		echo '<p><strong>' . __('Excerpt') . ':</strong><br/> ' . nl2br($post_sections['post_excerpt']) . '</p>';
 	}
 }
 

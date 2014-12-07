@@ -160,6 +160,8 @@ abstract class myGengo_Api
         {
         case 'job':
             return new myGengo_Api_Job($api_key, $private_key);
+        case 'order':
+            return new myGengo_Api_Order($api_key, $private_key);
         case 'jobs':
             return new myGengo_Api_Jobs($api_key, $private_key);
         case 'account':
