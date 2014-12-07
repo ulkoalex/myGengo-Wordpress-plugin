@@ -3,8 +3,8 @@ Contributors: gfhuertac
 Link: http://www.mygengo.com/
 Tags: translate, translation, language, international, revenue
 Requires at least: 2.7
-Tested up to: 3.0.3
-Stable tag: 1.0
+Tested up to: 4.0
+Stable tag: 1.1
 
 Simple Human Translation for your blog
 
